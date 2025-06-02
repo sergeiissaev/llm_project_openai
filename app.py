@@ -1,14 +1,10 @@
-# Standard Library Imports
-import logging
-import os
 
-# Third-party Imports
+import logging
+
 from dotenv import load_dotenv
 import chromadb
 import gradio as gr
-from huggingface_hub import snapshot_download
 
-# LlamaIndex (Formerly GPT Index) Imports
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core.retrievers import VectorIndexRetriever
@@ -21,32 +17,6 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
 from sentence_transformers import CrossEncoder
-
-cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
-
-class CrossEncoderRerankRetriever:
-    def __init__(self, base_retriever, cross_encoder, top_k=10):
-        self.base_retriever = base_retriever
-        self.cross_encoder = cross_encoder
-        self.top_k = top_k
-
-    async def aretrieve(self, query: str):
-        # Step 1: get candidate documents
-        docs = await self.base_retriever.aretrieve(query)
-        texts = [doc.text for doc in docs]
-
-        # Step 2: prepare query-document pairs
-        pairs = [[query, doc] for doc in texts]
-
-        # Step 3: rerank using CrossEncoder
-        scores = self.cross_encoder.predict(pairs)
-
-        # Step 4: sort and select top_k
-        ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-        reranked_docs = [docs[i] for i in ranked_indices[:self.top_k]]
-
-        return reranked_docs
-
 
 load_dotenv()
 
@@ -88,15 +58,12 @@ class FinancialLLM:
 
 
     def get_tools(self, data_folder: str, db_collection: str):
-        # Step 1: Load documents from .txt files
         documents = SimpleDirectoryReader(data_folder).load_data()
 
-        # Step 2: Setup Chroma persistence if you want to reuse it later
         db = chromadb.PersistentClient(path=f"data/{db_collection}")
         chroma_collection = db.get_or_create_collection(db_collection)
         vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
 
-        # Step 3: Build the index
         index = VectorStoreIndex.from_documents(
             documents,
             vector_store=vector_store,
@@ -105,16 +72,14 @@ class FinancialLLM:
             embed_model=Settings.embed_model,
         )
 
-        # Step 4: Setup retriever
-        # Original retriever
+
         vector_retriever = VectorIndexRetriever(
             index=index,
-            similarity_top_k=30,  # Fetch more so reranker can filter better
+            similarity_top_k=30,
             embed_model=Settings.embed_model,
             use_async=True,
         )
 
-        # Create CrossEncoder reranker
         cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
         def rerank_nodes(query: str, nodes):
@@ -122,13 +87,10 @@ class FinancialLLM:
             if not nodes:
                 return nodes
 
-            # Prepare sentence pairs for cross-encoder
             pairs = [(query, node.get_content()) for node in nodes]
 
-            # Get scores from cross-encoder
             scores = cross_encoder.predict(pairs)
 
-            # Sort nodes based on cross-encoder scores
             reranked_nodes = [
                 node for _, node in sorted(
                     zip(scores, nodes),
@@ -137,9 +99,8 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:15]  # Return top 15 after reranking
+            return reranked_nodes[:15]
 
-        # Create a retriever that applies reranking
         class RerankerRetriever(BaseRetriever):
             def __init__(self, base_retriever, rerank_fn):
                 self.base_retriever = base_retriever
@@ -150,13 +111,11 @@ class FinancialLLM:
                 a = self.rerank_fn(query_bundle.query_str, nodes)
                 return a
 
-        # Create the final retriever
         final_retriever = RerankerRetriever(
             base_retriever=vector_retriever,
             rerank_fn=rerank_nodes
         )
 
-        # Step 5: Wrap it as a tool
         tools = [
             RetrieverTool(
                 retriever=final_retriever,
@@ -174,7 +133,6 @@ class FinancialLLM:
     def generate_completion(self, query, history, memory):
         logging.info(f"User query: {query}")
 
-        # Manage memory
         chat_list = memory.get()
         if len(chat_list) != 0:
             user_index = [i for i, msg in enumerate(chat_list) if msg.role == MessageRole.USER]
@@ -194,7 +152,6 @@ class FinancialLLM:
             system_prompt=PROMPT_SYSTEM_MESSAGE,
         )
 
-        # Generate answer
         completion = agent.stream_chat(query)
         answer_str = ""
         for token in completion.response_gen:
@@ -228,7 +185,7 @@ class FinancialLLM:
             )
 
             demo.queue(default_concurrency_limit=64)
-            demo.launch(debug=True, share=False) # Set share=True to share the app online
+            demo.launch(debug=True, share=False)
 
 if __name__ == "__main__":
     finance_llm = FinancialLLM()
