@@ -40,7 +40,11 @@ Provide clear, structured, and informative answers that help users understand bo
 
 If the tool does not return information relevant to the question, politely explain that the current news data does not cover the topic, and therefore you cannot provide an answer.
 
-Present your responses in Markdown format for readability, and always encourage users to ask follow-up questions if they seek more detailed insights into any aspect of the financial news."""
+Present your responses in Markdown format for readability, and always encourage users to ask follow-up questions if they seek more detailed insights into any aspect of the financial news.
+
+Do not include inline references, source IDs, or citation placeholders such as [^12345^] in your responses. Write answers in a natural, explanatory tone.
+
+"""
 
 
 TEXT_QA_TEMPLATE = """
@@ -101,7 +105,7 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:15]
+            return reranked_nodes[:10]
 
         class RerankerRetriever(BaseRetriever):
             def __init__(self, base_retriever, rerank_fn):
