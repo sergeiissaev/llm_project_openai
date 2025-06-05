@@ -4,6 +4,15 @@ An interactive AI chatbot designed to help users understand and analyze real-tim
 
 ---
 
+---
+title: Financial News LLM
+colorFrom: green
+colorTo: red
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
 ## Overview
 
 This project provides a conversational agent specialized in **financial markets**, capable of interpreting and summarizing:
