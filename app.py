@@ -222,7 +222,7 @@ class FinancialLLM:
             )
             chatbot = gr.Chatbot(
                 scale=1,
-                placeholder="<strong>AI Tutor 🤖: A Question-Answering Bot for anything AI-related</strong><br>",
+                placeholder="<strong>Financial News LLM: A Question-Answering Bot for new happenings in the world of finance</strong><br>",
                 show_label=False,
                 show_copy_button=True,
             )
