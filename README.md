@@ -13,8 +13,6 @@ An interactive AI chatbot designed to help users understand and analyze real-tim
 
 ---
 
-
-
 ## Overview
 
 This project provides a conversational agent specialized in **financial markets**, capable of interpreting and summarizing:
