@@ -9,8 +9,7 @@ from deli import parse_site
 class Scraper:
     def __init__(self):
         self.fnews = News()
-        if not Path.is_dir(Path("data/scraped_news")):
-            os.mkdir("data/scraped_news")
+        Path("data/scraped_news").mkdir(parents=True, exist_ok=True)
 
     def scrape_and_save(self):
         all_news = self.fnews.get_news()
