@@ -143,11 +143,14 @@ class FinancialLLM:
 
             chat_list = memory.get()
             if len(chat_list) != 0:
+                for msg in chat_list:
+                    if msg.role == MessageRole.TOOL:
+                        msg.content = msg.content[50:100] # to keep context window from exploding
                 user_index = [i for i, msg in enumerate(chat_list) if msg.role == MessageRole.USER]
                 if len(user_index) > len(history):
                     user_index_to_remove = user_index[len(history)]
                     chat_list = chat_list[:user_index_to_remove]
-                    memory.set(chat_list)
+                memory.set(chat_list)
             logging.info(f"chat_history: {len(memory.get())} {memory.get()}")
             logging.info(f"gradio_history: {len(history)} {history}")
 
