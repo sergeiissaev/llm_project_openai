@@ -105,7 +105,7 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:10]
+            return reranked_nodes[:8]
 
         class RerankerRetriever(BaseRetriever):
             def __init__(self, base_retriever, rerank_fn):
