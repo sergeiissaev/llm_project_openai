@@ -52,6 +52,7 @@ class FinancialLLM:
 
     def __init__(self):
         self.tools = None
+        self.valid_key = False
         Settings.llm = OpenAI(temperature=0, model="gpt-4o-mini")
         Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
 
@@ -131,33 +132,55 @@ class FinancialLLM:
 
 
     def generate_completion(self, query, history, memory):
-        logging.info(f"User query: {query}")
+        if self.valid_key:
+            logging.info(f"User query: {query}")
 
-        chat_list = memory.get()
-        if len(chat_list) != 0:
-            user_index = [i for i, msg in enumerate(chat_list) if msg.role == MessageRole.USER]
-            if len(user_index) > len(history):
-                user_index_to_remove = user_index[len(history)]
-                chat_list = chat_list[:user_index_to_remove]
-                memory.set(chat_list)
-        logging.info(f"chat_history: {len(memory.get())} {memory.get()}")
-        logging.info(f"gradio_history: {len(history)} {history}")
+            chat_list = memory.get()
+            if len(chat_list) != 0:
+                user_index = [i for i, msg in enumerate(chat_list) if msg.role == MessageRole.USER]
+                if len(user_index) > len(history):
+                    user_index_to_remove = user_index[len(history)]
+                    chat_list = chat_list[:user_index_to_remove]
+                    memory.set(chat_list)
+            logging.info(f"chat_history: {len(memory.get())} {memory.get()}")
+            logging.info(f"gradio_history: {len(history)} {history}")
 
-        if self.tools is None:
-            raise ValueError("Please define tools")
-        agent = OpenAIAgent.from_tools(
-            llm=Settings.llm,
-            memory=memory,
-            tools=self.tools,
-            system_prompt=PROMPT_SYSTEM_MESSAGE,
-        )
+            if self.tools is None:
+                raise ValueError("Please define tools")
+            agent = OpenAIAgent.from_tools(
+                llm=Settings.llm,
+                memory=memory,
+                tools=self.tools,
+                system_prompt=PROMPT_SYSTEM_MESSAGE,
+            )
 
-        completion = agent.stream_chat(query)
-        answer_str = ""
-        for token in completion.response_gen:
-            answer_str += token
-            yield answer_str
+            completion = agent.stream_chat(query)
+            answer_str = ""
+            for token in completion.response_gen:
+                answer_str += token
+                yield answer_str
+        else:
+            yield "Please enter an API key"
 
+
+    def set_openai_key(self, api_key):
+        """Update the OpenAI settings with user-provided API key"""
+        self.openai_key = api_key
+        if api_key:
+            try:
+                Settings.llm = OpenAI(
+                    api_key=api_key,
+                    temperature=0,
+                    model="gpt-4"
+                )
+                Settings.embed_model = OpenAIEmbedding(
+                    api_key=api_key,
+                    model="text-embedding-3-small"
+                )
+                return True, "API key set successfully"
+            except Exception as e:
+                return False, f"Error setting API key: {str(e)}"
+        return False, "No API key provided"
 
     def launch_ui(self):
         with gr.Blocks(
@@ -165,6 +188,31 @@ class FinancialLLM:
             title="AI Tutor 🤖",
             analytics_enabled=True,
         ) as demo:
+            with gr.Row():
+                openai_key = gr.Textbox(
+                    label="OpenAI API Key",
+                    type="password",
+                    placeholder="sk-...",
+                    info="Required for all OpenAI functionality",
+                    scale=4
+                )
+                api_status = gr.HTML("<div style='color: gray'>⚪ No API key provided</div>")
+
+                def verify_and_set_key(key):
+                    success, message = self.set_openai_key(key)
+                    status_icon = "🟢" if success else "🔴" if key else "⚪"
+                    color = "green" if success else "red" if key else "gray"
+                    if success:
+                        self.valid_key = True
+                        self.get_tools(db_collection="scraped_news", data_folder="data/scraped_news")
+                    return f"<div style='color: {color}'>{status_icon} {message}</div>"
+
+                openai_key.change(
+                    fn=verify_and_set_key,
+                    inputs=openai_key,
+                    outputs=api_status
+            )
+
 
             memory_state = gr.State(
                 lambda: ChatSummaryMemoryBuffer.from_defaults(
@@ -184,10 +232,10 @@ class FinancialLLM:
                 additional_inputs=[memory_state],
             )
 
-            demo.queue(default_concurrency_limit=64)
-            demo.launch(debug=True, share=False)
+        demo.queue(default_concurrency_limit=64)
+        demo.launch(debug=True, share=False)
 
 if __name__ == "__main__":
     finance_llm = FinancialLLM()
-    tools = finance_llm.get_tools(db_collection="scraped_news", data_folder="data/scraped_news")
+    #tools = finance_llm.get_tools(db_collection="scraped_news", data_folder="data/scraped_news")
     finance_llm.launch_ui()
