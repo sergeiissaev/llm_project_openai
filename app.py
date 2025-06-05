@@ -18,6 +18,8 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
 from sentence_transformers import CrossEncoder
 
+from web_scrape import Scraper
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -38,7 +40,11 @@ Provide clear, structured, and informative answers that help users understand bo
 
 If the tool does not return information relevant to the question, politely explain that the current news data does not cover the topic, and therefore you cannot provide an answer.
 
-Present your responses in Markdown format for readability, and always encourage users to ask follow-up questions if they seek more detailed insights into any aspect of the financial news."""
+Present your responses in Markdown format for readability, and always encourage users to ask follow-up questions if they seek more detailed insights into any aspect of the financial news.
+
+Do not include inline references, source IDs, or citation placeholders such as [^12345^] in your responses. Write answers in a natural, explanatory tone.
+
+"""
 
 
 TEXT_QA_TEMPLATE = """
@@ -73,7 +79,6 @@ class FinancialLLM:
             embed_model=Settings.embed_model,
         )
 
-
         vector_retriever = VectorIndexRetriever(
             index=index,
             similarity_top_k=30,
@@ -100,7 +105,8 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:15]
+            return reranked_nodes[:4]
+
 
         class RerankerRetriever(BaseRetriever):
             def __init__(self, base_retriever, rerank_fn):
@@ -216,12 +222,12 @@ class FinancialLLM:
 
             memory_state = gr.State(
                 lambda: ChatSummaryMemoryBuffer.from_defaults(
-                    token_limit=120000,
+                    token_limit=10000,
                 )
             )
             chatbot = gr.Chatbot(
                 scale=1,
-                placeholder="<strong>AI Tutor 🤖: A Question-Answering Bot for anything AI-related</strong><br>",
+                placeholder="<strong>Financial News LLM: A Question-Answering Bot for new happenings in the world of finance</strong><br>",
                 show_label=False,
                 show_copy_button=True,
             )
@@ -236,6 +242,9 @@ class FinancialLLM:
         demo.launch(debug=True, share=False)
 
 if __name__ == "__main__":
+    # firstly we scrape. in production, this can be redone once a day.
+    scraper = Scraper()
+    scraper.scrape_and_save()
     finance_llm = FinancialLLM()
     #tools = finance_llm.get_tools(db_collection="scraped_news", data_folder="data/scraped_news")
     finance_llm.launch_ui()

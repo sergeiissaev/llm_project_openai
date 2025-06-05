@@ -1,3 +1,12 @@
+---
+title: Financial News LLM
+colorFrom: green
+colorTo: red
+sdk: gradio
+app_file: app.py
+pinned: false
+---
+
 # Financial News QA Assistant
 
 An interactive AI chatbot designed to help users understand and analyze real-time financial news using OpenAI’s large language models, vector search, and cross-encoder reranking.
