@@ -73,7 +73,6 @@ class FinancialLLM:
             embed_model=Settings.embed_model,
         )
 
-
         vector_retriever = VectorIndexRetriever(
             index=index,
             similarity_top_k=30,
