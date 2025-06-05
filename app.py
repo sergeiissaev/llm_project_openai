@@ -105,7 +105,7 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:4]
+            return reranked_nodes[:3]
 
 
         class RerankerRetriever(BaseRetriever):
