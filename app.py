@@ -237,7 +237,7 @@ class FinancialLLM:
         demo.launch(debug=True, share=False)
 
 if __name__ == "__main__":
-    # firstly we scrape
+    # firstly we scrape. in production, this can be redone once a day.
     scraper = Scraper()
     scraper.scrape_and_save()
     finance_llm = FinancialLLM()
