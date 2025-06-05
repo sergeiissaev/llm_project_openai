@@ -18,6 +18,8 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
 from sentence_transformers import CrossEncoder
 
+from web_scrape import Scraper
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -235,6 +237,9 @@ class FinancialLLM:
         demo.launch(debug=True, share=False)
 
 if __name__ == "__main__":
+    # firstly we scrape
+    scraper = Scraper()
+    scraper.scrape_and_save()
     finance_llm = FinancialLLM()
     #tools = finance_llm.get_tools(db_collection="scraped_news", data_folder="data/scraped_news")
     finance_llm.launch_ui()
