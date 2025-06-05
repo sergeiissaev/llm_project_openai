@@ -105,7 +105,7 @@ class FinancialLLM:
                 )
             ]
 
-            return reranked_nodes[:5]
+            return reranked_nodes[:4]
 
 
         class RerankerRetriever(BaseRetriever):
@@ -222,7 +222,7 @@ class FinancialLLM:
 
             memory_state = gr.State(
                 lambda: ChatSummaryMemoryBuffer.from_defaults(
-                    token_limit=120000,
+                    token_limit=10000,
                 )
             )
             chatbot = gr.Chatbot(
